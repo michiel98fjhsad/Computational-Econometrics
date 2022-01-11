@@ -1,1 +1,3 @@
-# our R script
+# our R script goes here
+x <- c(1,2,3,4,5)
+mean(x)
