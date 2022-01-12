@@ -1,6 +1,4 @@
-## test test
-# test Michiel
-# test Ivan
+#Merge test into master
 
 rm(list=ls())
 ?solve
