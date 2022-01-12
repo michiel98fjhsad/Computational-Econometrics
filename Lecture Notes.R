@@ -1,3 +1,9 @@
+<<<<<<< HEAD
+=======
+## test test
+# test Michiel
+
+>>>>>>> develop
 rm(list=ls())
 ?solve
 # Ordinary Least Squares
