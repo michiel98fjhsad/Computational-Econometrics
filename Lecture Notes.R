@@ -1,6 +1,3 @@
-# testing
-
-
 rm(list=ls())
 ?solve
 # Ordinary Least Squares
