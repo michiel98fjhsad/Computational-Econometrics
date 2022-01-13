@@ -163,9 +163,35 @@ p.val <- mean(Q.star>Q.n)
 # p value of 0.06212 means we fail to reject the null hypothesis
 
 
+######### Testing for the Mean #########
+set.seed(515)
+nr.sim <- 2000; B <- 499;
+n <- 100; alpha <- 0.05;
+mu <- 0 # true value of mean
+reject <- rep(0, times = nr.sim) # vector that will store my rejections
 
+for (i in 1:nr.sim){
+  ## Step 1: Simulate ##
+  X <- rnorm(n, mean = mu)
+  ## Step 2: Apply ##
+  X.bar <- mean(X)
+  St.Dev <- sd(X)
+  Q <- sqrt(n)*X.bar/St.Dev
+  Q.s <- rep(NA, times = B)
+  for (b in 1:B){ # nested bootstrap step
+    J <- sample.int(n, size = n, replace = TRUE)
+    X.star <- X[J]
+    X.bar.star <- mean(X.star)
+    St.Dev.star <- sd(X.star)
+    Q.s[b] <- sqrt(n)*(X.bar.star - X.bar)/St.Dev.star
+  }
+  cv.star <- quantile(Q.s, probs = 1-alpha)
+  ## Step 3: Evaluate ##
+  if (Q>cv.star) {reject[i] <- 1}
+}
+## Step 4: Summarize ##
+ERF <- mean(reject)
+print(paste("Rejection occurred in ", 100 *ERF, "% of the cases."))
 
-
-
-
-
+# rejection occurred in 6.15% of the cases. 
+34+69
