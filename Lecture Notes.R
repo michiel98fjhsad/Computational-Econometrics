@@ -194,4 +194,4 @@ ERF <- mean(reject)
 print(paste("Rejection occurred in ", 100 *ERF, "% of the cases."))
 
 # rejection occurred in 6.15% of the cases. 
-34+69
+
