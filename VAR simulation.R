@@ -21,11 +21,19 @@ k <- 4 # Number of endogenous variables
 p <- 2 # Number of lags
 
 # Generate coefficient matrices
-A.1 <- matrix(c(0.1,0.1,0.1,0.4,0,0,0.2,0.2,0.1,0.1,0.3,0.3,0.5,0.4,0.1,0), k) # Coefficient matrix of lag 1
-A.2 <- matrix(c(.1,.2,.1,.5,0.1,0.2,0.2,0.2,0.1,0.2,0.4,0.3,0.2,0.5,0.3,0), k) # Coefficient matrix of lag 2
+gamma <- 0.8
+delta <- 0
+alpha <- -0.4
+A.1 <- diag(x = alpha, k) # Alpha matrix
+A.2 <- diag(x = 1, k) # 4x4 identity matrix
+A.3 <- matrix(c(gamma, delta, 0, 0, delta, gamma, 0, 0, 0, 0, gamma, 0, 0, 0, 0, gamma), k) # Gamma matrix
+A <- A.1 + A.2 + A.3
+
 # Check eigenvalues
 eigen(A.1)
 eigen(A.2)
+eigen(A.3)
+eigen(A)
 A <- cbind(A.1, A.2) # Companion form of the coefficient matrices
 
 test <- rnorm(k,0,1)
