@@ -34,17 +34,22 @@ A <- A.1 + A.2 + B
 # Generate series
 series <- matrix(0, k, t + 2*p) # Raw series with zeros
 for (i in (p + 1):(t + 2*p)){ # Generate series with e ~ N(0,1)
-  series[, i] <- A%*%series[, i-1] + B%*%series[, i-2] + rnorm(k, 0, 1)
+  series[, i] <- A%*%series[, i-1] - B%*%series[, i-2] + rnorm(k, 0, 1)
 }
 
 seriests <- ts(t(series[, -(1:p)])) # Convert to time series format
 names <- c("V1", "V2", "V3", "V4") # Rename variables
+transseries <- t(series)
+ts.plot(transseries)
+
 
 ## Cointegration test ##
 #logseries <- (series
-ca <- ca.jo(series, type = "trace", K = 2, ecdet = "none")
+ca <- ca.jo(transseries, type = "trace", K = 2, ecdet = "none")
 summary(ca)
 
+colnames(transseries) <- names
+colnames(transseries)
 
 # Number of simulations
 nr.sim <- 1000
@@ -77,5 +82,14 @@ for (i in 1:nr.sim){
   if (Q.n > cv.t) {reject.t[i] <- 1}
 }
 mean(series)
+
+
+########## Trace Test Function ########## 
+
+tracetest <- function(Y,X){
+  abs(solve())
+  z <- max(eigen(Y)$values,eigen(X)$values)
+  Q <- -t*sum(log(1-z),)
+}
 
 
