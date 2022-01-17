@@ -9,8 +9,6 @@ n <- c(NA)
 
 beta.hat <- solve(crossprod(X),crossprod(X,Y)) # least squares estimator
 
-
-
 e.hat <- Y - X%*%beta.hat # residuals
 s2 <- crossprod(e.hat)/n # sigma hat squared
 
@@ -161,6 +159,7 @@ for (b in 1:B) {
 cv <- quantile(Q.star, probs = 1-alpha)
 p.val <- mean(Q.star>Q.n)
 # p value of 0.06212 means we fail to reject the null hypothesis
+
 
 
 
