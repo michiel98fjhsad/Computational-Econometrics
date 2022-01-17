@@ -2,15 +2,6 @@
 # We look to simulate a VAR(2) with k = 4 equations
 rm(list=ls())
 
-phi <- matrix(c(0.5,0.1,0.2,0.4), nrow = 2)
-eps <- matrix(rnorm(200), ncol = 2) # given n is 100
-X <- matrix(nrow = 100, ncol = 2)
-X[1,] <- eps[1,] # first starting point for "for" loop
-for (t in 2:100) {
-  X[t,] <- X[t-1,]%*%t(phi) + eps[t,]
-}
-
-
 # Pulled from r-econometrics
 
 set.seed(123) # Reset random number generator for reasons of reproducability
@@ -24,7 +15,7 @@ p <- 2 # Number of lags
 a <- -0.4
 gamma <- 0.8
 delta <- 0
-r.delta <- sample(delta, 1)
+r.delta <- sample(delta, 1) # Create list with random delta's 
 alpha <- t(t(c(a,0,0,0)))
 beta <- t(t(c(1,0,0,0)))
 
@@ -32,7 +23,6 @@ A.1 <- alpha %*% t(beta) # Alpha matrix
 A.2 <- diag(x = 1, k) # 4x4 identity matrix
 B <- matrix(c(gamma, delta, 0, 0, delta, gamma, 0, 0, 0, 0, gamma, 0, 0, 0, 0, gamma), k) # Gamma matrix
 A <- A.1 + A.2 + B
-
 
 ##### Test
 
@@ -44,12 +34,11 @@ for (i in 1:10){
 }
 
 
-
 # Check eigenvalues
-eigen(A.1)
-eigen(A.2)
-eigen(A) # Unstable eigenvalues
-eigen(B) # 1 eigenvalue is equal to 1
+#eigen(A.1)
+#eigen(A.2)
+#eigen(A) # Unstable eigenvalues
+#eigen(B) # 1 eigenvalue is equal to 1
 
 
 # Generate series
@@ -58,13 +47,14 @@ for (i in (p + 1):(t + 2*p)){ # Generate series with e ~ N(0,1)
   series[, i] <- A%*%series[, i-1] + B%*%series[, i-2] + rnorm(k, 0, 1)
 }
 
-series <- ts(t(series[, -(1:p)])) # Convert to time series format
+seriests <- ts(t(series[, -(1:p)])) # Convert to time series format
 names <- c("V1", "V2", "V3", "V4") # Rename variables
 
-plot.ts(series) # Plot the series
+## Cointegration test ##
+#logseries <- (series
+ca <- ca.jo(series, type = "trace", K = 2, ecdet = "none")
+summary(ca)
 
-
-########### Likelihood Ratio Test (Trace Test) ########### 
 
 # Number of simulations
 nr.sim <- 1000
@@ -81,13 +71,13 @@ reject.t <- rep(0, times = nr.sim)
 for (i in 1:nr.sim){
   ## Step 1: Simulate ##
   # Generate sample from VAR
-  series <- matrix(0, k, t + 2*p) # Raw series with zeros
+  seriessim <- matrix(0, k, t + 2*p) # Raw series with zeros
   for (i in (p + 1):(t + 2*p)){ # Generate series with e ~ N(0,1)
-    series[, i] <- A%*%series[, i-1] + B%*%series[, i-2] + rnorm(k, 0, 1)
+    seriessim[, i] <- A%*%seriessim[, i-1] + B%*%seriessim[, i-2] + rnorm(k, 0, 1)
   }
-  ##Step 2: Apply ##
-  X.bar <- mean(series) # Sample Mean
-  St.Dev <- sd(series) # Sample Std. Dev
+  ##Step 2: Apply Trace test ##
+  X.bar <- mean(seriessim) # Sample Mean
+  St.Dev <- sd(seriessim) # Sample Std. Dev
   Q.n <- sqrt(n) * X.bar / St.Dev # Test statistic
   cv.n <- qnorm(1-c) # normal critical value
   cv.t <- qt(1-c, n-1) # t critical value
@@ -97,18 +87,5 @@ for (i in 1:nr.sim){
   if (Q.n > cv.t) {reject.t[i] <- 1}
 }
 mean(series)
-
-####### Using Ca.Jo ####### 
-dfseries <- data.frame(series)
-ca.jo(series, type = "trace", K = 2, ecdet = "none")
-dfseries1 <- dfseries[1,]
-dfseries2 <- dfseries[2,]
-dfseries3 <- dfseries[3,]
-dfseries4 <- dfseries[4,]
-
-ca.jo(t(series), type = "trace", K = 4, ecdet = "none")
-
-
-
 
 
