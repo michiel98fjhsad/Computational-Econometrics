@@ -9,8 +9,6 @@ n <- c(NA)
 
 beta.hat <- solve(crossprod(X),crossprod(X,Y)) # least squares estimator
 
-
-
 e.hat <- Y - X%*%beta.hat # residuals
 s2 <- crossprod(e.hat)/n # sigma hat squared
 
@@ -194,4 +192,5 @@ ERF <- mean(reject)
 print(paste("Rejection occurred in ", 100 *ERF, "% of the cases."))
 
 # rejection occurred in 6.15% of the cases. 
+
 

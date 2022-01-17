@@ -48,7 +48,7 @@ for (j in 1:nr.sim){
   S <- summary(ca)
   cv <- c(48.28, 31.52, 17.95, 8.18)
   teststats <- rev(S@teststat)
-  
+
   ## Step 3: Evaluate ##
   # Check if null hypothesis is rejected
   if (teststats[1] > 48.25) {reject.0[j] <- 1}
