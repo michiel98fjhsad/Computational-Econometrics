@@ -24,16 +24,6 @@ A.2 <- diag(x = 1, k) # 4x4 identity matrix
 B <- matrix(c(gamma, delta, 0, 0, delta, gamma, 0, 0, 0, 0, gamma, 0, 0, 0, 0, gamma), k) # Gamma matrix
 A <- A.1 + A.2 + B
 
-##### Test
-
-
-x <- c(sample(delta, 10000, replace = TRUE))
-
-for (i in 1:10){
-  r.delta <- sample(delta,i, replace = TRUE)
-}
-
-
 # Check eigenvalues
 #eigen(A.1)
 #eigen(A.2)
