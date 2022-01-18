@@ -70,10 +70,7 @@ ERF.1 <- mean(reject.1)
   J <- ceiling(runif(n, min = 0, max = n))
   # we do B bootstrap replications and store the quantities in a vector
   B = 199
-  #reject.star.0 <- rep(0, times = B)
-  #reject.star.1 <- rep(0, times = B)
-  Q.star1 <- matrix(data = NA,nrow= B, ncol = 4)   
-  #Q.star <- rep(NA, times = B);
+  Q.star <- matrix(data = NA,nrow= B, ncol = 4)   
   for (b in 1:B) {
     J <- sample.int(n, size = n, replace = TRUE) # Draw J
     X.star <- X[J,]
@@ -83,8 +80,12 @@ ERF.1 <- mean(reject.1)
     teststats.star <- rev(S.star@teststat) #stored as teststat
     Q.star1[b,] <- teststats.star
   }
-    cv.star1 <- quantile(Q.star1[,1], probs=0.95)
-    cv.star2 <- quantile(Q.star1[,2], probs=0.95)
+    cv.star1 <- quantile(Q.star[,1], probs=0.95) ## Crit value for r = 0
+    cv.star2 <- quantile(Q.star[,2], probs=0.95) ## Crit value for r = 1
+    
+    
+    
+    
     #if (teststats.star[1] > 48.28) {reject.star.0[b] <- 1}
     #if (teststats.star[2] > 31.52) {reject.star.1[b] <- 1}
   
