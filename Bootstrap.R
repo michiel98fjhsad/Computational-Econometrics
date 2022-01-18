@@ -22,7 +22,7 @@ A <- A.1 + A.2 + Bmat
 
 ######### Testing for the Mean #########
 set.seed(123)
-nr.sim <- 1000; B <- 399;
+nr.sim <- 1000; B <- 199;
 n <- t + 4;
 reject.star.0 <- rep(0, times = nr.sim)
 reject.star.1 <- rep(0, times = nr.sim)
