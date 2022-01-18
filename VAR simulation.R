@@ -24,14 +24,14 @@ Bmat <- matrix(c(gamma, delta, 0, 0, delta, gamma, 0, 0, 0, 0, gamma, 0, 0, 0, 0
 A <- A.1 + A.2 + Bmat
 
 # Number of simulations
-nr.sim <- 10000
+nr.sim <- 1000
 # Initialize a vector of 0s to store rejections
 reject.0 <- rep(0, times = nr.sim)
 reject.1 <- rep(0, times = nr.sim)
 names <- c("V1", "V2", "V3", "V4") # Rename variables
 
 ###### Start the Simulation ######
-
+Q <- matrix(data = NA,nrow= nr.sim, ncol = 4)
 for (j in 1:nr.sim){
   ## Step 1: Simulate ##
   # Generate sample from VAR
@@ -39,8 +39,6 @@ for (j in 1:nr.sim){
   for (i in (p + 1):(t + 2*p)){ # Generate series with e ~ N(0,1)
     series[, i] <- A%*%series[, i-1] - Bmat%*%series[, i-2] + rnorm(k, 0, 1)
   }
-  seriests <- ts(t(series[, -(1:p)])) # Convert to time series format
-
   X <- t(series)
   colnames(X) <- names
   
@@ -48,7 +46,7 @@ for (j in 1:nr.sim){
   ca <- ca.jo(X, type = "trace", K = 2, ecdet = "none")
   S <- summary(ca)
   teststats <- rev(S@teststat)
-
+  Q[j,] <- teststats
   ## Step 3: Evaluate ##
   # Check if null hypothesis is rejected
   if (teststats[1] > 48.28) {reject.0[j] <- 1}
@@ -64,47 +62,43 @@ ERF.1 <- mean(reject.1)
   print(paste("Chance to reject 0: ", ERF.0))
   print(paste("Chance to reject 1: ", ERF.1))
 
+  
+  
   ##################### THE BOOTSTRAP IN R #####################
-  X.df <- data.frame(X)
   # First draw indices of the bootstrap sample: draw n times with replacement
   n = 54
-  #J <- ceiling(runif(n, min = 0, max = n))
-  #X.star1 <- X.df$V1 # put elements of X corresponding to the drawn indices in a vector X*
-  #X.star2 <- X.df$V2
-  #X.star3 <- X.df$V3
-  #X.star4 <- X.df$V4
-  #X.star <- cbind(X.star1,X.star2,X.star3,X.star4)
-  
+  J <- ceiling(runif(n, min = 0, max = n))
   # we do B bootstrap replications and store the quantities in a vector
-  B = 5
-  reject.star.0 <- rep(0, times = B)
-  reject.star.1 <- rep(0, times = B)
-  Q.star <- rep(NA, times = B);
+  B = 199
+  #reject.star.0 <- rep(0, times = B)
+  #reject.star.1 <- rep(0, times = B)
+  Q.star1 <- matrix(data = NA,nrow= B, ncol = 4)   
+  #Q.star <- rep(NA, times = B);
   for (b in 1:B) {
     J <- sample.int(n, size = n, replace = TRUE) # Draw J
-    X.star1 <- X.df$V1[J] # put elements of X corresponding to the drawn indices in a vector X*
-    X.star2 <- X.df$V2[J]
-    X.star3 <- X.df$V3[J]
-    X.star4 <- X.df$V4[J]
-    X.star <- cbind(X.star1,X.star2,X.star3,X.star4)
+    X.star <- X[J,]
     colnames(X.star) <- names
     ca.star <- ca.jo(X.star, type = "trace", K = 2, ecdet = "none")
     S.star <- summary(ca.star)
     teststats.star <- rev(S.star@teststat) #stored as teststat
-    if (teststats.star[1] > 48.28) {reject.star.0[b] <- 1}
-    if (teststats.star[2] > 31.52) {reject.star.1[b] <- 1}
+    Q.star1[b,] <- teststats.star
   }
+    cv.star1 <- quantile(Q.star1[,1], probs=0.95)
+    cv.star2 <- quantile(Q.star1[,2], probs=0.95)
+    #if (teststats.star[1] > 48.28) {reject.star.0[b] <- 1}
+    #if (teststats.star[2] > 31.52) {reject.star.1[b] <- 1}
+  
   
 
- ######### Testing for the Mean #########
+ ######### Testing for the Trace test #########
   set.seed(123)
-  nr.sim <- 1000; B <- 10;
+  nr.sim <- 500; B <- 199;
   n <- t + 4;
   reject.star.0 <- rep(0, times = nr.sim)
   reject.star.1 <- rep(0, times = nr.sim)
   X.df <- data.frame(X)
   names <- c("V1", "V2", "V3", "V4") # Rename variables
-  
+  Q.star1 <- matrix(data = NA,nrow= B, ncol = 4) 
   for (i in 1:nr.sim){
     ## Step 1: Simulate ##
     series <- matrix(0, k, t + 2*p) # Raw series with zeros
@@ -130,10 +124,15 @@ ERF.1 <- mean(reject.1)
       ca.star <- ca.jo(X.star, type = "trace", K = 2, ecdet = "none")
       S.star <- summary(ca.star)
       teststats.star <- rev(S.star@teststat) #stored as teststat
-      if (teststats.star[1] > 48.28) {reject.star.0[b] <- 1}
-      if (teststats.star[2] > 31.52) {reject.star.1[b] <- 1}
+      Q.star1[b,] <- teststats.star
     }
-  }
+    cv.star1 <- quantile(Q.star1[,1], probs=0.95)
+    cv.star2 <- quantile(Q.star1[,2], probs=0.95)
+    
+    if (teststats[1] > cv.star1) {reject.star.0[b] <- 1}
+    if (teststats[2] > cv.star2) {reject.star.1[b] <- 1}
+    }
+  
   ## Step 4: Summarize ##
   ERF.0 <- mean(reject.star.0)
   ERF.1 <- mean(reject.star.1)
