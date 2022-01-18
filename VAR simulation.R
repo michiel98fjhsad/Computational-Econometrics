@@ -7,7 +7,7 @@ library(urca)
 set.seed(123) # Reset random number generator for reasons of reproducability
 
 # Generate sample
-t <- 50 # Number of time series observations
+t <- 100 # Number of time series observations
 k <- 4 # Number of endogenous variables
 p <- 2 # Number of lags
 
@@ -20,24 +20,24 @@ alpha <- t(t(c(a,0,0,0)))
 beta <- t(t(c(1,0,0,0)))
 A.1 <- alpha %*% t(beta) # Alpha matrix
 A.2 <- diag(x = 1, k) # 4x4 identity matrix
-B <- matrix(c(gamma, delta, 0, 0, delta, gamma, 0, 0, 0, 0, gamma, 0, 0, 0, 0, gamma), k) # Gamma matrix
-A <- A.1 + A.2 + B
+Bmat <- matrix(c(gamma, delta, 0, 0, delta, gamma, 0, 0, 0, 0, gamma, 0, 0, 0, 0, gamma), k) # Gamma matrix
+A <- A.1 + A.2 + Bmat
 
 # Number of simulations
-nr.sim <- 1000
+nr.sim <- 10000
 # Initialize a vector of 0s to store rejections
 reject.0 <- rep(0, times = nr.sim)
 reject.1 <- rep(0, times = nr.sim)
 
 ###### Start the Simulation ######
-cv <- c(48.28, 31.52, 17.95, 8.18)
+#cv <- c(48.28, 31.52, 17.95, 8.18)
 
 for (j in 1:nr.sim){
   ## Step 1: Simulate ##
   # Generate sample from VAR
   series <- matrix(0, k, t + 2*p) # Raw series with zeros
   for (i in (p + 1):(t + 2*p)){ # Generate series with e ~ N(0,1)
-    series[, i] <- A%*%series[, i-1] - B%*%series[, i-2] + rnorm(k, 0, 1)
+    series[, i] <- A%*%series[, i-1] - Bmat%*%series[, i-2] + rnorm(k, 0, 1)
   }
   names <- c("V1", "V2", "V3", "V4") # Rename variables
   X <- t(series)
@@ -50,7 +50,7 @@ for (j in 1:nr.sim){
 
   ## Step 3: Evaluate ##
   # Check if null hypothesis is rejected
-  if (teststats[1] > 48.25) {reject.0[j] <- 1}
+  if (teststats[1] > 48.28) {reject.0[j] <- 1}
   if (teststats[2] > 31.52) {reject.1[j] <- 1}
   }
 
