@@ -20,14 +20,15 @@ alpha <- t(t(c(a,0,0,0)))
 beta <- t(t(c(1,0,0,0)))
 A.1 <- alpha %*% t(beta) # Alpha matrix
 A.2 <- diag(x = 1, k) # 4x4 identity matrix
-B <- matrix(c(gamma, delta, 0, 0, delta, gamma, 0, 0, 0, 0, gamma, 0, 0, 0, 0, gamma), k) # Gamma matrix
-A <- A.1 + A.2 + B
+Bmat <- matrix(c(gamma, delta, 0, 0, delta, gamma, 0, 0, 0, 0, gamma, 0, 0, 0, 0, gamma), k) # Gamma matrix
+A <- A.1 + A.2 + Bmat
 
 # Number of simulations
 nr.sim <- 10000
 # Initialize a vector of 0s to store rejections
 reject.0 <- rep(0, times = nr.sim)
 reject.1 <- rep(0, times = nr.sim)
+names <- c("V1", "V2", "V3", "V4") # Rename variables
 
 ###### Start the Simulation ######
 
@@ -36,22 +37,21 @@ for (j in 1:nr.sim){
   # Generate sample from VAR
   series <- matrix(0, k, t + 2*p) # Raw series with zeros
   for (i in (p + 1):(t + 2*p)){ # Generate series with e ~ N(0,1)
-    series[, i] <- A%*%series[, i-1] - B%*%series[, i-2] + rnorm(k, 0, 1)
+    series[, i] <- A%*%series[, i-1] - Bmat%*%series[, i-2] + rnorm(k, 0, 1)
   }
   seriests <- ts(t(series[, -(1:p)])) # Convert to time series format
-  names <- c("V1", "V2", "V3", "V4") # Rename variables
-  transseries <- t(series)
-  colnames(transseries) <- names
+
+  X <- t(series)
+  colnames(X) <- names
   
   ##Step 2: Apply Trace test ##
-  ca <- ca.jo(transseries, type = "trace", K = 2, ecdet = "none")
+  ca <- ca.jo(X, type = "trace", K = 2, ecdet = "none")
   S <- summary(ca)
-  cv <- c(48.28, 31.52, 17.95, 8.18)
   teststats <- rev(S@teststat)
 
   ## Step 3: Evaluate ##
   # Check if null hypothesis is rejected
-  if (teststats[1] > 48.25) {reject.0[j] <- 1}
+  if (teststats[1] > 48.28) {reject.0[j] <- 1}
   if (teststats[2] > 31.52) {reject.1[j] <- 1}
   }
 
@@ -64,6 +64,81 @@ ERF.1 <- mean(reject.1)
   print(paste("Chance to reject 0: ", ERF.0))
   print(paste("Chance to reject 1: ", ERF.1))
 
+  ##################### THE BOOTSTRAP IN R #####################
+  X.df <- data.frame(X)
+  # First draw indices of the bootstrap sample: draw n times with replacement
+  n = 54
+  #J <- ceiling(runif(n, min = 0, max = n))
+  #X.star1 <- X.df$V1 # put elements of X corresponding to the drawn indices in a vector X*
+  #X.star2 <- X.df$V2
+  #X.star3 <- X.df$V3
+  #X.star4 <- X.df$V4
+  #X.star <- cbind(X.star1,X.star2,X.star3,X.star4)
+  
+  # we do B bootstrap replications and store the quantities in a vector
+  B = 5
+  reject.star.0 <- rep(0, times = B)
+  reject.star.1 <- rep(0, times = B)
+  Q.star <- rep(NA, times = B);
+  for (b in 1:B) {
+    J <- sample.int(n, size = n, replace = TRUE) # Draw J
+    X.star1 <- X.df$V1[J] # put elements of X corresponding to the drawn indices in a vector X*
+    X.star2 <- X.df$V2[J]
+    X.star3 <- X.df$V3[J]
+    X.star4 <- X.df$V4[J]
+    X.star <- cbind(X.star1,X.star2,X.star3,X.star4)
+    colnames(X.star) <- names
+    ca.star <- ca.jo(X.star, type = "trace", K = 2, ecdet = "none")
+    S.star <- summary(ca.star)
+    teststats.star <- rev(S.star@teststat) #stored as teststat
+    if (teststats.star[1] > 48.28) {reject.star.0[b] <- 1}
+    if (teststats.star[2] > 31.52) {reject.star.1[b] <- 1}
+  }
+  
+
+ ######### Testing for the Mean #########
+  set.seed(123)
+  nr.sim <- 1000; B <- 10;
+  n <- t + 4;
+  reject.star.0 <- rep(0, times = nr.sim)
+  reject.star.1 <- rep(0, times = nr.sim)
+  X.df <- data.frame(X)
+  names <- c("V1", "V2", "V3", "V4") # Rename variables
+  
+  for (i in 1:nr.sim){
+    ## Step 1: Simulate ##
+    series <- matrix(0, k, t + 2*p) # Raw series with zeros
+    for (i in (p + 1):(t + 2*p)){ # Generate series with e ~ N(0,1)
+      series[, i] <- A%*%series[, i-1] - Bmat%*%series[, i-2] + rnorm(k, 0, 1)
+    }
+    seriests <- ts(t(series[, -(1:p)])) # Convert to time series format
+    
+    X <- t(series)
+    colnames(X) <- names
+    ## Step 2: Apply ##
+    ca <- ca.jo(X, type = "trace", K = 2, ecdet = "none")
+    S <- summary(ca)
+    teststats <- rev(S@teststat)
+    for (b in 1:B){ # nested bootstrap step
+      J <- sample.int(n, size = n, replace = TRUE) # Draw J
+      X.star1 <- X.df$V1[J] # put elements of X corresponding to the drawn indices in a vector X*
+      X.star2 <- X.df$V2[J]
+      X.star3 <- X.df$V3[J]
+      X.star4 <- X.df$V4[J]
+      X.star <- cbind(X.star1,X.star2,X.star3,X.star4)
+      colnames(X.star) <- names
+      ca.star <- ca.jo(X.star, type = "trace", K = 2, ecdet = "none")
+      S.star <- summary(ca.star)
+      teststats.star <- rev(S.star@teststat) #stored as teststat
+      if (teststats.star[1] > 48.28) {reject.star.0[b] <- 1}
+      if (teststats.star[2] > 31.52) {reject.star.1[b] <- 1}
+    }
+  }
+  ## Step 4: Summarize ##
+  ERF.0 <- mean(reject.star.0)
+  ERF.1 <- mean(reject.star.1)
+  print(paste("Rejection occurred in ", 100 *ERF.0, "% of the cases."))
+  print(paste("Rejection occurred in ", 100 *ERF.1, "% of the cases."))  
   
   
 ### NOTES ###
