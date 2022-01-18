@@ -1,7 +1,7 @@
 ####### Simulating a standard VAR #######
 # We look to simulate a VAR(2) with k = 4 equations
 rm(list=ls())
-
+library(urca)
 # Pulled from r-econometrics
 
 set.seed(123) # Reset random number generator for reasons of reproducability
@@ -30,6 +30,7 @@ reject.0 <- rep(0, times = nr.sim)
 reject.1 <- rep(0, times = nr.sim)
 
 ###### Start the Simulation ######
+cv <- c(48.28, 31.52, 17.95, 8.18)
 
 for (j in 1:nr.sim){
   ## Step 1: Simulate ##
@@ -38,7 +39,6 @@ for (j in 1:nr.sim){
   for (i in (p + 1):(t + 2*p)){ # Generate series with e ~ N(0,1)
     series[, i] <- A%*%series[, i-1] - B%*%series[, i-2] + rnorm(k, 0, 1)
   }
-  seriests <- ts(t(series[, -(1:p)])) # Convert to time series format
   names <- c("V1", "V2", "V3", "V4") # Rename variables
   transseries <- t(series)
   colnames(transseries) <- names
@@ -46,7 +46,6 @@ for (j in 1:nr.sim){
   ##Step 2: Apply Trace test ##
   ca <- ca.jo(transseries, type = "trace", K = 2, ecdet = "none")
   S <- summary(ca)
-  cv <- c(48.28, 31.52, 17.95, 8.18)
   teststats <- rev(S@teststat)
 
   ## Step 3: Evaluate ##
@@ -95,5 +94,3 @@ ERF.1 <- mean(reject.1)
   #    return(c.rank <- i-1) 
   #  }
   #}
-  
-  
