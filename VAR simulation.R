@@ -40,11 +40,11 @@ for (j in 1:nr.sim){
     series[, i] <- A%*%series[, i-1] - B%*%series[, i-2] + rnorm(k, 0, 1)
   }
   names <- c("V1", "V2", "V3", "V4") # Rename variables
-  transseries <- t(series)
-  colnames(transseries) <- names
+  X <- t(series)
+  colnames(X) <- names
   
   ##Step 2: Apply Trace test ##
-  ca <- ca.jo(transseries, type = "trace", K = 2, ecdet = "none")
+  ca <- ca.jo(X, type = "trace", K = 2, ecdet = "none")
   S <- summary(ca)
   teststats <- rev(S@teststat)
 
