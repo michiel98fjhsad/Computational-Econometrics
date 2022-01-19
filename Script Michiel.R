@@ -2,7 +2,7 @@
 # We look to simulate a VAR(2) with k = 4 equations
 rm(list=ls())
 library(yuima)
-library(urca)
+library(urca); library(vars)
 # Pulled from r-econometrics
 
 set.seed(123) # Reset random number generator for reasons of reproducability
@@ -73,10 +73,6 @@ ERF.1 <- mean(reject.1)
 print(paste("Chance to reject 0: ", ERF.0))
 print(paste("Chance to reject 1: ", ERF.1))
 
-for(i in 1:50){
-  Y[i,] <- X[i-1,] - X[i-2,]
-}
-estimate <- ols()
 
 ##################### THE BOOTSTRAP IN R #####################
 # First draw indices of the bootstrap sample: draw n times with replacement
