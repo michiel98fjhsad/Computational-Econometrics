@@ -1,9 +1,9 @@
-####### Simulating a standard VAR #######
+############### Bootstrap Determination of the Co-Integration Rank in a VAR ###############
+
+
+####### Initialise the variables #######
 # We look to simulate a VAR(2) with k = 4 equations
 rm(list=ls())
-
-# Pulled from r-econometrics
-
 set.seed(123) # Reset random number generator for reasons of reproducability
 
 # Generate sample
@@ -12,30 +12,27 @@ k <- 4 # Number of endogenous variables
 p <- 2 # Number of lags
 
 # Generate coefficient matrices
-a <- -0.4; gamma <- 0.8; delta <- 0; alpha <- t(t(c(a,0,0,0))); beta <- t(t(c(1,0,0,0))) # Given from paper
+a <- -0.4 ; gamma <- 0.8 ; alpha <- t(t(c(a,0,0,0))); beta <- t(t(c(1,0,0,0))) 
+delta <- 0; # Define variables given in Paper
 A.1 <- alpha %*% t(beta) # Alpha matrix
 A.2 <- diag(x = 1, k) # 4x4 identity matrix
 Bmat <- matrix(c(gamma, delta, 0, 0, delta, gamma, 0, 0, 0, 0, gamma, 0, 0, 0, 0, gamma), k) # Gamma matrix
-A <- A.1 + A.2 + Bmat # Parameter matrix lag 1
+A <- A.1 + A.2 + Bmat
 
+###### Monte Carlo Simulation ######
 # Number of simulations
 nr.sim <- 1000
 # Initialize a vector of 0s to store rejections
-reject.0 <- rep(0, times = nr.sim); reject.1 <- rep(0, times = nr.sim)
+reject.0 <- rep(0, times = nr.sim)
+reject.1 <- rep(0, times = nr.sim)
 names <- c("V1", "V2", "V3", "V4") # Rename variables
-
-###### Start the Simulation ######
 Q <- matrix(data = NA,nrow= nr.sim, ncol = 4)
-e <- matrix(data = NA, nrow = nr.sim, ncol = 4)
 for (j in 1:nr.sim){
   ## Step 1: Simulate ##
   # Generate sample from VAR
   series <- matrix(0, k, t + 2*p) # Raw series with zeros
-  
   for (i in (p + 1):(t + 2*p)){ # Generate series with e ~ N(0,1)
-    e_temp <- rnorm(k, 0, 1)
-    e[j,c(1:4)] <- e_temp # residuals are saved into a vector
-    series[, i] <- A%*%series[, i-1] - Bmat%*%series[, i-2] + e_temp # VAR of order 2
+    series[, i] <- A%*%series[, i-1] - Bmat%*%series[, i-2] + rnorm(k, 0, 1)
   }
   X <- t(series)
   colnames(X) <- names
@@ -62,9 +59,13 @@ print(paste("Chance to reject 1: ", ERF.1))
 ts.plot(X)
 
 
+
 ############# Estimated VAR based on simul  ############# 
+# We estimate a VAR pretending not to know the distribution of the data given by the simulation
+
 VARnew <- VAR(X, p = 2, type = "const")
-res.VARnew <- residuals(VARnew)
+res.VARnew <- residuals(VARnew) # residuals are saved for future reference
+sum <- summary(VARnew)
 
 # mean matrix of residuals
 mean.res <- cbind(mean(res.VARnew[,1]), mean(res.VARnew[,2]), mean(res.VARnew[,3]), mean(res.VARnew[,4])) 
@@ -72,42 +73,52 @@ mean.res1 <- mean(res.VARnew[,1]); mean.res2 <- mean(res.VARnew[,2]); mean.res3 
 
 # re-centered residuals
 res.cen <- cbind(res.VARnew[,1] - mean.res1, res.VARnew[,2] - mean.res2, res.VARnew[,3] - mean.res3, res.VARnew[,4] - mean.res4) 
+tres.cen <- t(res.cen)
 
+# Create the estimated 1st and 2nd lag matrices of the model and the estimated constant
+lag1coef <- rbind(t(as.matrix(sum$varresult$V1$coefficients[1:4,1])),t(as.matrix(sum$varresult$V2$coefficients[1:4,1])),
+                  t(as.matrix(sum$varresult$V3$coefficients[1:4,1])),t(as.matrix(sum$varresult$V4$coefficients[1:4,1])))
+lag2coef <- rbind(t(as.matrix(sum$varresult$V1$coefficients[5:8,1])),t(as.matrix(sum$varresult$V2$coefficients[5:8,1])),
+                  t(as.matrix(sum$varresult$V3$coefficients[5:8,1])),t(as.matrix(sum$varresult$V4$coefficients[5:8,1])))
+const <- rbind((as.matrix(sum$varresult$V1$coefficients[9,1])),(as.matrix(sum$varresult$V2$coefficients[9,1])),
+               (as.matrix(sum$varresult$V3$coefficients[9,1])), (as.matrix(sum$varresult$V1$coefficients[9,1])))
 
+# Test if we can resample from estimated serie 
+estseries <- matrix(0, k, t + 2*p) # Raw series with zeros
+for (i in (p + 1):(t + 2*p)){ # Generate series with e ~ N(0,1)
+  estseries[, i] <- lag1coef%*%estseries[, i-1] + lag2coef%*%estseries[, i-2] + const + res.cen[i]
+}
+X.star <- t(estseries)
+ts.plot(X.star) # plot the estimated time series based on simulated data
 
 ##################### THE BOOTSTRAP IN R #####################
-
-
-
-
-
 # First draw indices of the bootstrap sample: draw n times with replacement
-n = 54
+n = 50
 J <- ceiling(runif(n, min = 0, max = n))
 # we do B bootstrap replications and store the quantities in a vector
 B = 199
-#reject.star.0 <- rep(0, times = B)
-#reject.star.1 <- rep(0, times = B)
-Q.star1 <- matrix(data = NA,nrow= B, ncol = 4)   
-#Q.star <- rep(NA, times = B);
+Q.star <- matrix(data = NA,nrow= B, ncol = 4)   
 for (b in 1:B) {
   J <- sample.int(n, size = n, replace = TRUE) # Draw J
-  rescen.star <- res.cen[J,] # bootstrap residuals stored in rescen.star
-  colnames(X.star) <- names
-  ca.star <- ca.jo(X.star, type = "trace", K = 2, ecdet = "none")
-  S.star <- summary(ca.star)
-  teststats.star <- rev(S.star@teststat) #stored as teststat
-  Q.star1[b,] <- teststats.star
+  estseries <- matrix(0, k, t + 2*p) # Raw series with zeros
+  for (i in (p + 1):(t + 2*p)-4){ # Generate series with e ~ N(0,1)
+    estseries[, i] <- lag1coef%*%estseries[, i-1] + lag2coef%*%estseries[, i-2] + const + tres.cen[,J]
+  }
+  X.star1 <- t(estseries)
 }
-cv.star1 <- quantile(Q.star1[,1], probs=0.95)
-cv.star2 <- quantile(Q.star1[,2], probs=0.95)
-#if (teststats.star[1] > 48.28) {reject.star.0[b] <- 1}
-#if (teststats.star[2] > 31.52) {reject.star.1[b] <- 1}
-ts.plot(Q.star1)  
+colnames(X.star) <- names
+ca.star <- ca.jo(X.star, type = "trace", K = 2, ecdet = "none")
+S.star <- summary(ca.star)
+teststats.star <- rev(S.star@teststat) #stored as teststat
+Q.star1[b,] <- teststats.star
+
+cv.star1 <- quantile(Q.star[,1], probs=0.95) ## Crit value for r = 0
+cv.star2 <- quantile(Q.star[,2], probs=0.95) ## Crit value for r = 1
 
 
-######### Testing for the Trace test #########
-set.seed(123)
+
+
+######### Putting everything together #########
 nr.sim <- 500; B <- 199;
 n <- t + 4;
 reject.star.0 <- rep(0, times = nr.sim)
@@ -131,11 +142,7 @@ for (i in 1:nr.sim){
   teststats <- rev(S@teststat)
   for (b in 1:B){ # nested bootstrap step
     J <- sample.int(n, size = n, replace = TRUE) # Draw J
-    X.star1 <- X.df$V1[J] # put elements of X corresponding to the drawn indices in a vector X*
-    X.star2 <- X.df$V2[J]
-    X.star3 <- X.df$V3[J]
-    X.star4 <- X.df$V4[J]
-    X.star <- cbind(X.star1,X.star2,X.star3,X.star4)
+    X.star <- X[J,]
     colnames(X.star) <- names
     ca.star <- ca.jo(X.star, type = "trace", K = 2, ecdet = "none")
     S.star <- summary(ca.star)
@@ -185,3 +192,5 @@ print(paste("Rejection occurred in ", 100 *ERF.1, "% of the cases."))
 #    return(c.rank <- i-1) 
 #  }
 #}
+
+
