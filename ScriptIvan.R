@@ -83,13 +83,15 @@ lag2coef <- rbind(t(as.matrix(sum$varresult$V1$coefficients[5:8,1])),t(as.matrix
 const <- rbind((as.matrix(sum$varresult$V1$coefficients[9,1])),(as.matrix(sum$varresult$V2$coefficients[9,1])),
                (as.matrix(sum$varresult$V3$coefficients[9,1])), (as.matrix(sum$varresult$V1$coefficients[9,1])))
 
-# Test if we can resample from estimated serie 
+# Test if we can resample from estimated series 
 estseries <- matrix(0, k, t + 2*p) # Raw series with zeros
 for (i in (p + 1):(t + 2*p)){ # Generate series with e ~ N(0,1)
   estseries[, i] <- lag1coef%*%estseries[, i-1] + lag2coef%*%estseries[, i-2] + const + res.cen[i]
 }
 X.star <- t(estseries)
 ts.plot(X.star) # plot the estimated time series based on simulated data
+
+
 
 ##################### THE BOOTSTRAP IN R #####################
 # First draw indices of the bootstrap sample: draw n times with replacement
@@ -102,7 +104,7 @@ for (b in 1:B) {
   J <- sample.int(n, size = n, replace = TRUE) # Draw J
   estseries <- matrix(0, k, t + 2*p) # Raw series with zeros
   for (i in (p + 1):(t + 2*p)-4){ # Generate series with e ~ N(0,1)
-    estseries[, i] <- lag1coef%*%estseries[, i-1] + lag2coef%*%estseries[, i-2] + const + tres.cen[,J]
+    estseries[, i] <- lag1coef%*%estseries[, i-1] + lag2coef%*%estseries[, i-2] + const + res.cen[,J]
   }
   X.star1 <- t(estseries)
 }
