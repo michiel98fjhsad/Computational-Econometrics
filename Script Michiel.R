@@ -56,6 +56,16 @@ ERF.1 <- mean(reject.1)
 print(paste("Chance to reject 0: ", ERF.0))
 print(paste("Chance to reject 1: ", ERF.1))
 
+ols <- function(Y,X.ols){ # OLS function ourselves #
+  b<- solve(crossprod(X.ols), crossprod(X.ols,Y)) # coefficient estimates
+  y.hat <- X.ols%*%b # fitted values
+  out <- list(coef.estimates = b, fitted.values = y.hat)
+  return(out)
+}
+X.ols <- matrix( c(2,4,6,8,10, 3,4,5,6,8), byrow = TRUE, nrow = 2)
+Y <- matrix(4,8,12,16,20, byrow = TRUE, nro)
+ols(Y, X.ols)
+
 VARnew <- VAR(X, p = 2, type = "const") # estimation of our VAR by OLS 
 res.VARnew <- residuals(VARnew)
 mean.res <- cbind(mean(res.VARnew[,1]), mean(res.VARnew[,2]), mean(res.VARnew[,3]), mean(res.VARnew[,4])) 
