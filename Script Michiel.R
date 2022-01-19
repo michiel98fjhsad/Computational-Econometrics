@@ -73,6 +73,13 @@ ERF.1 <- mean(reject.1)
 print(paste("Chance to reject 0: ", ERF.0))
 print(paste("Chance to reject 1: ", ERF.1))
 
+VARnew <- VAR(X, p = 2, type = "const")
+res.VARnew <- residuals(VARnew)
+mean.res <- cbind(mean(res.VARnew[,1]), mean(res.VARnew[,2]), mean(res.VARnew[,3]), mean(res.VARnew[,4])) 
+mean.res1 <- mean(res.VARnew[,1]); mean.res2 <- mean(res.VARnew[,2]); mean.res3 <- mean(res.VARnew[,3]); mean.res4 <- mean(res.VARnew[,4])
+# re-centered residuals
+res.cen <- cbind(res.VARnew[,1] - mean.res1, res.VARnew[,2] - mean.res2, res.VARnew[,3] - mean.res3, res.VARnew[,4] - mean.res4) 
+
 
 ##################### THE BOOTSTRAP IN R #####################
 # First draw indices of the bootstrap sample: draw n times with replacement
