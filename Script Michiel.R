@@ -1,7 +1,8 @@
 ####### Simulating a standard VAR #######
 # We look to simulate a VAR(2) with k = 4 equations
 rm(list=ls())
-
+library(yuima)
+library(urca)
 # Pulled from r-econometrics
 
 set.seed(123) # Reset random number generator for reasons of reproducability
@@ -22,6 +23,16 @@ A.1 <- alpha %*% t(beta) # Alpha matrix
 A.2 <- diag(x = 1, k) # 4x4 identity matrix
 Bmat <- matrix(c(gamma, delta, 0, 0, delta, gamma, 0, 0, 0, 0, gamma, 0, 0, 0, 0, gamma), k) # Gamma matrix
 A <- A.1 + A.2 + Bmat
+
+ols <- function(Y,X){ # building OLS function
+  b<- solve(crossprod(X), crossprod(X,Y)) # coefficient estimates
+  y.hat <- X%*%b # fitted values
+  out <- list(coef.estimates = b, fitted.values = y.hat)
+  return(out)
+}
+# first value spits out the coefficient estimate, the second value spits out 
+ols.out <- ols(Y,X)
+beta.hat <- ols.out[[1]]
 
 # Number of simulations
 nr.sim <- 1000
@@ -62,7 +73,10 @@ ERF.1 <- mean(reject.1)
 print(paste("Chance to reject 0: ", ERF.0))
 print(paste("Chance to reject 1: ", ERF.1))
 
-
+for(i in 1:50){
+  Y[i,] <- X[i-1,] - X[i-2,]
+}
+estimate <- ols()
 
 ##################### THE BOOTSTRAP IN R #####################
 # First draw indices of the bootstrap sample: draw n times with replacement
