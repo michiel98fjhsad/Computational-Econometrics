@@ -12,12 +12,7 @@ k <- 4 # Number of endogenous variables
 p <- 2 # Number of lags
 
 # Generate coefficient matrices
-a <- -0.4
-gamma <- 0.8
-delta <- 0
-r.delta <- sample(delta, 1) # Create list with random delta's 
-alpha <- t(t(c(a,0,0,0)))
-beta <- t(t(c(1,0,0,0)))
+a <- -0.4; gamma <- 0.8; delta <- 0; alpha <- t(t(c(a,0,0,0))); beta <- t(t(c(1,0,0,0)))
 A.1 <- alpha %*% t(beta) # Alpha matrix
 A.2 <- diag(x = 1, k) # 4x4 identity matrix
 Bmat <- matrix(c(gamma, delta, 0, 0, delta, gamma, 0, 0, 0, 0, gamma, 0, 0, 0, 0, gamma), k) # Gamma matrix
@@ -26,8 +21,7 @@ A <- A.1 + A.2 + Bmat
 # Number of simulations
 nr.sim <- 1000
 # Initialize a vector of 0s to store rejections
-reject.0 <- rep(0, times = nr.sim)
-reject.1 <- rep(0, times = nr.sim)
+reject.0 <- rep(0, times = nr.sim); reject.1 <- rep(0, times = nr.sim)
 names <- c("V1", "V2", "V3", "V4") # Rename variables
 
 ###### Start the Simulation ######
@@ -68,24 +62,9 @@ ERF.1 <- mean(reject.1)
   ts.plot(X)
 
   
-  
-  
-  
-  ############# OLS function ############# 
-  
-  ols <- function(Y,X){
-    b<- solve(crossprod(X), crossprod(X,Y)) # coefficient estimates
-    y.hat <- X%*%b # fitted values
-    out <- list(coef.estimates = b, fitted.values = y.hat)
-    return(out)
-  }
-  
   ############# Estimated VAR based on simul  ############# 
   VARnew <- VAR(X, p = 2, type = "const")
   res.VARnew <- residuals(VARnew)
-
-  mean.res.VARnew <- sumq/t
-  
   
   # mean matrix of residuals
   mean.res <- cbind(mean(res.VARnew[,1]), mean(res.VARnew[,2]), mean(res.VARnew[,3]), mean(res.VARnew[,4])) 
