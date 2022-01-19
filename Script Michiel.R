@@ -73,13 +73,13 @@ ERF.1 <- mean(reject.1)
 print(paste("Chance to reject 0: ", ERF.0))
 print(paste("Chance to reject 1: ", ERF.1))
 
-VARnew <- VAR(X, p = 2, type = "const")
+VARnew <- VAR(X, p = 2, type = "const") # estimation of our VAR by OLS 
 res.VARnew <- residuals(VARnew)
 mean.res <- cbind(mean(res.VARnew[,1]), mean(res.VARnew[,2]), mean(res.VARnew[,3]), mean(res.VARnew[,4])) 
 mean.res1 <- mean(res.VARnew[,1]); mean.res2 <- mean(res.VARnew[,2]); mean.res3 <- mean(res.VARnew[,3]); mean.res4 <- mean(res.VARnew[,4])
 # re-centered residuals
 res.cen <- cbind(res.VARnew[,1] - mean.res1, res.VARnew[,2] - mean.res2, res.VARnew[,3] - mean.res3, res.VARnew[,4] - mean.res4) 
-
+summary <- summary(VARnew)
 
 ##################### THE BOOTSTRAP IN R #####################
 # First draw indices of the bootstrap sample: draw n times with replacement
@@ -89,11 +89,11 @@ J <- ceiling(runif(n, min = 0, max = n))
 B = 199
 #reject.star.0 <- rep(0, times = B)
 #reject.star.1 <- rep(0, times = B)
-Q.star1 <- matrix(data = NA,nrow= B, ncol = 4)   
+Q.star1 <- matrix(data = NA,nrow= B, ncol = 4)  # to save test stats 
 #Q.star <- rep(NA, times = B);
 for (b in 1:B) {
   J <- sample.int(n, size = n, replace = TRUE) # Draw J
-  X.star <- X[J,]
+  X.star <- X[J,] 
   colnames(X.star) <- names
   ca.star <- ca.jo(X.star, type = "trace", K = 2, ecdet = "none")
   S.star <- summary(ca.star)
