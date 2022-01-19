@@ -1,10 +1,7 @@
 ####### Simulating a standard VAR #######
 # We look to simulate a VAR(2) with k = 4 equations
 rm(list=ls())
-library(yuima)
-library(urca); library(vars)
-# Pulled from r-econometrics
-
+library(yuima); library(urca); library(vars)
 set.seed(123) # Reset random number generator for reasons of reproducability
 
 # Generate sample
@@ -13,26 +10,12 @@ k <- 4 # Number of endogenous variables
 p <- 2 # Number of lags
 
 # Generate coefficient matrices
-a <- -0.4
-gamma <- 0.8
-delta <- 0
-r.delta <- sample(delta, 1) # Create list with random delta's 
-alpha <- t(t(c(a,0,0,0)))
-beta <- t(t(c(1,0,0,0)))
+a <- -0.4; gamma <- 0.8; alpha <- t(t(c(a,0,0,0))); beta <- t(t(c(1,0,0,0)))
+delta <- 0 #0, 0.1, 0.2, 0.3
 A.1 <- alpha %*% t(beta) # Alpha matrix
 A.2 <- diag(x = 1, k) # 4x4 identity matrix
 Bmat <- matrix(c(gamma, delta, 0, 0, delta, gamma, 0, 0, 0, 0, gamma, 0, 0, 0, 0, gamma), k) # Gamma matrix
 A <- A.1 + A.2 + Bmat
-
-ols <- function(Y,X){ # building OLS function
-  b<- solve(crossprod(X), crossprod(X,Y)) # coefficient estimates
-  y.hat <- X%*%b # fitted values
-  out <- list(coef.estimates = b, fitted.values = y.hat)
-  return(out)
-}
-# first value spits out the coefficient estimate, the second value spits out 
-ols.out <- ols(Y,X)
-beta.hat <- ols.out[[1]]
 
 # Number of simulations
 nr.sim <- 1000
@@ -60,7 +43,7 @@ for (j in 1:nr.sim){
   Q[j,] <- teststats
   ## Step 3: Evaluate ##
   # Check if null hypothesis is rejected
-  if (teststats[1] > 48.28) {reject.0[j] <- 1}
+  if (teststats[1] > 48.28) {reject.0[j] <- 1} # crit vals from ca.jo
   if (teststats[2] > 31.52) {reject.1[j] <- 1}
 }
 
@@ -104,8 +87,6 @@ cv.star1 <- quantile(Q.star1[,1], probs=0.95)
 cv.star2 <- quantile(Q.star1[,2], probs=0.95)
 #if (teststats.star[1] > 48.28) {reject.star.0[b] <- 1}
 #if (teststats.star[2] > 31.52) {reject.star.1[b] <- 1}
-
-
 
 ######### Testing for the Trace test #########
 set.seed(123)
