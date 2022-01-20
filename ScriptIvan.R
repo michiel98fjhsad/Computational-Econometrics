@@ -167,7 +167,7 @@ for (i in 1:nr.sim){
     S.star <- summary(ca.star)
     teststats.star <- rev(S.star@teststat) #stored as teststat
     Q.star1[b,] <- teststats.star
-  }
+    }
   cv.star1 <- quantile(Q.star1[,2], probs=0.95)
   cv.star2 <- quantile(Q.star1[,3], probs=0.95)
   if (teststats[1] > cv.star1) {reject.star.0[b] <- 1}
