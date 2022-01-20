@@ -4,7 +4,7 @@ rm(list=ls())
 set.seed(123) # Reset random number generator for reasons of reproducability
 library(urca)
 library(vars)
-
+library(matlib)
 # Generate sample
 t <- 50 # Number of time series observations
 n <- t + 2
@@ -51,15 +51,20 @@ Delta.Xt.min3 <- t(Delta.Xt.min3)
 #ols(Delta.Xt[2:52,], Xt.min1[1:51,]- Delta.Xt[1:51,])
 
 ols.lm1 <- lm(Delta.Xt~Xt.min1 + Delta.Xt.min1)
-res1 <- ols.lm1$residuals
+u <- ols.lm1$residuals
 
 ols.lm2 <- lm(Xt.min1~Delta.Xt.min1+Delta.Xt.min2+Delta.Xt.min3)
-res2 <- ols.lm2$residuals
+v <- ols.lm2$residuals
 
 
-for(i in  1:length(res1[,1])){
-  sigma.uu <- 1/length(res1[,1]) * res1[i,]%*%t(res1[i,])
+for(i in  1:length(u[,1])){
+  sigma.uu <- 1/length(u[,1]) * u[i,]%*%t(u[i,])
+  sigma.vv <- 1/length(v[,1]) * v[i,]%*%t(v[i,])
+  sigma.uv <- 1/length(v[,1]) * u[i,]%*%t(v[i,])
+  sigma.vu <- 1/length(v[,1]) * v[i,]%*%t(u[i,])
 }
+Sigma <- inv(sigma.vv)%*%sigma.vu%*%inv(sigma.uu)%*%sigma.uv
+
 
 ###### Monte Carlo Simulation ######
 # Number of simulations
