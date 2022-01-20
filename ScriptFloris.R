@@ -56,9 +56,9 @@ res1 <- ols.lm1$residuals
 ols.lm2 <- lm(Xt.min1~Delta.Xt.min1+Delta.Xt.min2+Delta.Xt.min3)
 res2 <- ols.lm2$residuals
 
-uu <- res1 %*% t(res1)
+
 for(i in  1:length(res1[,1])){
- 1/length(res1[,1]) * sigma.uu[i]
+  sigma.uu <- 1/length(res1[,1]) * res1[i,]%*%t(res1[i,])
 }
 
 ###### Monte Carlo Simulation ######
