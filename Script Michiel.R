@@ -64,7 +64,9 @@ ols <- function(Y,X.ols){ # OLS function ourselves #
 }
 X.ols <- matrix( c(2,4,6,8,10, 3,4,5,6,8), byrow = TRUE, nrow = 2)
 Y <- matrix(4,8,12,16,20, byrow = TRUE, nro)
-ols(Y, X.ols)
+X.2 <- t(X)
+ols.est <- ols(X[3:53,], X[2:52,]- X[1:51,])
+
 
 VARnew <- VAR(X, p = 2, type = "const") # estimation of our VAR by OLS 
 res.VARnew <- residuals(VARnew)
