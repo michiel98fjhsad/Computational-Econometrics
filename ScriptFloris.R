@@ -6,7 +6,7 @@ library(urca)
 library(vars)
 
 # Generate sample
-t <- 100 # Number of time series observations
+t <- 50 # Number of time series observations
 n <- t + 2
 k <- 4 # Number of endogenous variables
 p <- 2 # Number of lags
@@ -18,6 +18,48 @@ A.1 <- alpha %*% t(beta) # Alpha matrix
 A.2 <- diag(x = 1, k) # 4x4 identity matrix
 Bmat <- matrix(c(gamma, delta, 0, 0, delta, gamma, 0, 0, 0, 0, gamma, 0, 0, 0, 0, gamma), k) # Gamma matrix
 A <- A.1 + A.2 + Bmat
+
+## Create DeltaXt
+series <- matrix(0, k, t + 2*p) # Raw series with zeros
+Delta.Xt <- matrix(0, k, t + 2*p)
+Xt.min1 <- matrix(0, k, t + 2*p)
+Delta.Xt.min1 <- matrix(0, k, t + 2*p)
+Delta.Xt.min2 <- matrix(0, k, t + 2*p+1)
+Delta.Xt.min3 <- matrix(0, k, t + 2*p+2)
+for (i in (p + 1):(t + 2*p)){ # Generate series with e ~ N(0,1)
+  series[, i] <- A%*%series[, i-1] - Bmat%*%series[, i-2] + rnorm(k, 0, 1)
+  Delta.Xt[,i] <- series[,i] - series[,i-1]
+  Xt.min1[,i] <- series[,i-1]
+  Delta.Xt.min1[,i] <- series[,i-1] - series[,i-2]
+  Delta.Xt.min2[,i+1] <- series[,i-1] - series[,i-2]
+  Delta.Xt.min3[,i+2] <- series[,i-1] - series[,i-2]
+}
+Delta.Xt.min2 <- Delta.Xt.min2[,1:54]
+Delta.Xt.min3 <- Delta.Xt.min3[,1:54]
+Delta.Xt <- t(Delta.Xt)
+Xt.min1 <- t(Xt.min1)
+Delta.Xt.min1 <- t(Delta.Xt.min1)
+Delta.Xt.min2 <- t(Delta.Xt.min2)
+Delta.Xt.min3 <- t(Delta.Xt.min3)
+
+#ols <- function(Y,X.ols){ # OLS function ourselves #
+#  b<- solve(crossprod(X.ols), crossprod(X.ols,Y)) # coefficient estimates
+#  y.hat <- X.ols%*%b # fitted values
+#  out <- list(coef.estimates = b, fitted.values = y.hat)
+#  return(out)
+#}
+#ols(Delta.Xt[2:52,], Xt.min1[1:51,]- Delta.Xt[1:51,])
+
+ols.lm1 <- lm(Delta.Xt~Xt.min1 + Delta.Xt.min1)
+res1 <- ols.lm1$residuals
+
+ols.lm2 <- lm(Xt.min1~Delta.Xt.min1+Delta.Xt.min2+Delta.Xt.min3)
+res2 <- ols.lm2$residuals
+
+uu <- res1 %*% t(res1)
+for(i in  1:length(res1[,1])){
+ 1/length(res1[,1]) * sigma.uu[i]
+}
 
 ###### Monte Carlo Simulation ######
 # Number of simulations
@@ -44,8 +86,8 @@ for (j in 1:nr.sim){
   Q[j,] <- teststats
   ## Step 3: Evaluate ##
   # Check if null hypothesis is rejected
-  if (teststats[1] > 71.3) {reject.0[j] <- 1}
-  if (teststats[2] > 71.2) {reject.1[j] <- 1}
+  if (teststats[1] > 48.28) {reject.0[j] <- 1}
+  if (teststats[2] > 31.52) {reject.1[j] <- 1}
 }
 
 ## Step 4: Summarize ##
@@ -62,6 +104,15 @@ print(paste("Chance to reject 1: ", ERF.1))
 # lag selection
 lag <- VARselect(X, lag.max = 3)
 lag$selection
+
+## OLS
+#ols <- function(Y,X.ols){ # OLS function ourselves #
+#  b<- solve(crossprod(X.ols), crossprod(X.ols,Y)) # coefficient estimates
+#  y.hat <- X.ols%*%b # fitted values
+#  out <- list(coef.estimates = b, fitted.values = y.hat)
+#  return(out)
+#}
+#ols(X[3:53,], X[2:52,]- X[1:51,])
 
 # Estimate VAR
 VARnew <- VAR(X, p = 2, type = "const")
@@ -112,8 +163,8 @@ for (b in 1:B) {
   S.star <- summary(ca.star)
   teststats.star <- rev(S.star@teststat) #stored as teststat
   Q.star1[b,] <- teststats.star
-  if (teststats.star[1] > 48.28) {reject.bstar.0[b] <- 1}
-  if (teststats.star[2] > 31.52) {reject.bstar.1[b] <- 1}
+  #if (teststats.star[1] > 48.28) {reject.bstar.0[b] <- 1}
+  #if (teststats.star[2] > 31.52) {reject.bstar.1[b] <- 1}
 }
 
 cv.star1 <- quantile(Q.star1[,1], probs=0.95) ## Crit value for r = 0
