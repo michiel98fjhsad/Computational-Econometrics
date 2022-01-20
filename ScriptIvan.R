@@ -5,6 +5,8 @@
 # We look to simulate a VAR(2) with k = 4 equations
 rm(list=ls())
 set.seed(123) # Reset random number generator for reasons of reproducability
+library(urca)
+library(vars)
 
 # Generate sample
 t <- 50 # Number of time series observations
@@ -12,8 +14,8 @@ k <- 4 # Number of endogenous variables
 p <- 2 # Number of lags
 
 # Generate coefficient matrices
-a <- -0.4 ; gamma <- 0.8 ; alpha <- t(t(c(a,0,0,0))); beta <- t(t(c(1,0,0,0))) 
-delta <- 0; # Define variables given in Paper
+a <- -0.4 ; gamma <- 0.8 ; alpha <- t(t(c(a,0,0,0))); beta <- t(t(c(1,0,0,0)))
+delta <- 0; # 0 , 0.1 , 0.2 , 0.3. 
 A.1 <- alpha %*% t(beta) # Alpha matrix
 A.2 <- diag(x = 1, k) # 4x4 identity matrix
 Bmat <- matrix(c(gamma, delta, 0, 0, delta, gamma, 0, 0, 0, 0, gamma, 0, 0, 0, 0, gamma), k) # Gamma matrix
@@ -59,21 +61,17 @@ print(paste("Chance to reject 1: ", ERF.1))
 ts.plot(X)
 
 
-
 ############# Estimated VAR based on simul  ############# 
-# We estimate a VAR pretending not to know the distribution of the data given by the simulation
-
 VARnew <- VAR(X, p = 2, type = "const")
-res.VARnew <- residuals(VARnew) # residuals are saved for future reference
+res.VARnew <- residuals(VARnew)
 sum <- summary(VARnew)
-
 # mean matrix of residuals
 mean.res <- cbind(mean(res.VARnew[,1]), mean(res.VARnew[,2]), mean(res.VARnew[,3]), mean(res.VARnew[,4])) 
 mean.res1 <- mean(res.VARnew[,1]); mean.res2 <- mean(res.VARnew[,2]); mean.res3 <- mean(res.VARnew[,3]); mean.res4 <- mean(res.VARnew[,4])
 
 # re-centered residuals
-res.cen <- cbind(res.VARnew[,1] - mean.res1, res.VARnew[,2] - mean.res2, res.VARnew[,3] - mean.res3, res.VARnew[,4] - mean.res4) 
-tres.cen <- t(res.cen)
+recenter.resids <- cbind(res.VARnew[,1] - mean.res1, res.VARnew[,2] - mean.res2, res.VARnew[,3] - mean.res3, res.VARnew[,4] - mean.res4) 
+trecenter.resids <- t(recenter.resids)
 
 # Create the estimated 1st and 2nd lag matrices of the model and the estimated constant
 lag1coef <- rbind(t(as.matrix(sum$varresult$V1$coefficients[1:4,1])),t(as.matrix(sum$varresult$V2$coefficients[1:4,1])),
@@ -83,49 +81,66 @@ lag2coef <- rbind(t(as.matrix(sum$varresult$V1$coefficients[5:8,1])),t(as.matrix
 const <- rbind((as.matrix(sum$varresult$V1$coefficients[9,1])),(as.matrix(sum$varresult$V2$coefficients[9,1])),
                (as.matrix(sum$varresult$V3$coefficients[9,1])), (as.matrix(sum$varresult$V1$coefficients[9,1])))
 
-# Test if we can resample from estimated series 
+
+# Test if we can resample from estimated serie 
 estseries <- matrix(0, k, t + 2*p) # Raw series with zeros
 for (i in (p + 1):(t + 2*p)){ # Generate series with e ~ N(0,1)
-  estseries[, i] <- lag1coef%*%estseries[, i-1] + lag2coef%*%estseries[, i-2] + const + res.cen[i]
+  estseries[, i] <- lag1coef%*%estseries[, i-1] + lag2coef%*%estseries[, i-2] + const + recenter.resids[i-2,]
 }
 X.star <- t(estseries)
-ts.plot(X.star) # plot the estimated time series based on simulated data
 
+# rename columns
+names2 <- c("Z1", "Z2", "Z3", "Z4") # Rename variables
+colnames(X.star) <- names2
 
+ts.plot(X.star)
 
 ##################### THE BOOTSTRAP IN R #####################
 # First draw indices of the bootstrap sample: draw n times with replacement
-n = 50
-J <- ceiling(runif(n, min = 0, max = n))
+n = 52
+#J <- ceiling(runif(n, min = 0, max = n))
 # we do B bootstrap replications and store the quantities in a vector
-B = 199
-Q.star <- matrix(data = NA,nrow= B, ncol = 4)   
+B = 99
+Q.star1 <- matrix(data = NA,nrow= B, ncol = 4) 
+reject.bstar.0 <- rep(0, times = B)
+reject.bstar.1 <- rep(0, times = B)
 for (b in 1:B) {
   J <- sample.int(n, size = n, replace = TRUE) # Draw J
-  estseries <- matrix(0, k, t + 2*p) # Raw series with zeros
-  for (i in (p + 1):(t + 2*p)-4){ # Generate series with e ~ N(0,1)
-    estseries[, i] <- lag1coef%*%estseries[, i-1] + lag2coef%*%estseries[, i-2] + const + res.cen[,J]
+  estseries1 <- matrix(0, k, t + 2*p) # Raw series with zeros
+  
+  for (i in (p + 1):(t + 2*p)){ # Generate series with e ~ N(0,1)
+    estseries1[, i] <- lag1coef%*%estseries1[, i-1] + lag2coef%*%estseries1[, i-2] + const + recenter.resids[J[i],]
   }
-  X.star1 <- t(estseries)
+  X.star <- t(estseries1)
+  colnames(X.star) <- names
+  ca.star <- ca.jo(X.star, type = "trace", K = 2, ecdet = "none")
+  
+  rpar <- vec2var(ca.star, r = 1)
+  
+  estseries2 <- matrix(0, k, t + 2*p) # Raw series with zeros
+  for (i in (p + 1):(t + 2*p)){ # Generate series with e ~ N(0,1)
+    estseries2[, i] <- rpar$A$A1%*%estseries2[, i-1] + rpar$A$A2%*%estseries2[, i-2] + const + recenter.resids[J[i],]
+  }
+  X.Star2 <- t(estseries2)
+  colnames(X.Star2) <- names
+  ca.star2 <- ca.jo(X.Star2, type = "trace", K=2, ecdet = "none")
+  
+  S.star <- summary(ca.star2)
+  teststats.star <- rev(S.star@teststat) #stored as teststat
+  Q.star1[b,] <- teststats.star
+  if (teststats.star[2] > 48.28) {reject.bstar.0[b] <- 1}
+  if (teststats.star[3] > 31.52) {reject.bstar.1[b] <- 1}
 }
-colnames(X.star) <- names
-ca.star <- ca.jo(X.star, type = "trace", K = 2, ecdet = "none")
-S.star <- summary(ca.star)
-teststats.star <- rev(S.star@teststat) #stored as teststat
-Q.star1[b,] <- teststats.star
 
-cv.star1 <- quantile(Q.star[,1], probs=0.95) ## Crit value for r = 0
-cv.star2 <- quantile(Q.star[,2], probs=0.95) ## Crit value for r = 1
-
-
+cv.star1 <- quantile(Q.star1[,2], probs=0.05) ## Crit value for r = 0
+cv.star2 <- quantile(Q.star1[,3], probs=0.05) ## Crit value for r = 1
 
 
 ######### Putting everything together #########
 nr.sim <- 500; B <- 199;
-n <- t + 4;
+n <- t + 2;
 reject.star.0 <- rep(0, times = nr.sim)
 reject.star.1 <- rep(0, times = nr.sim)
-X.df <- data.frame(X)
 names <- c("V1", "V2", "V3", "V4") # Rename variables
 Q.star1 <- matrix(data = NA,nrow= B, ncol = 4) 
 for (i in 1:nr.sim){
@@ -134,26 +149,27 @@ for (i in 1:nr.sim){
   for (i in (p + 1):(t + 2*p)){ # Generate series with e ~ N(0,1)
     series[, i] <- A%*%series[, i-1] - Bmat%*%series[, i-2] + rnorm(k, 0, 1)
   }
-  seriests <- ts(t(series[, -(1:p)])) # Convert to time series format
-  
   X <- t(series)
   colnames(X) <- names
   ## Step 2: Apply ##
   ca <- ca.jo(X, type = "trace", K = 2, ecdet = "none")
   S <- summary(ca)
   teststats <- rev(S@teststat)
-  for (b in 1:B){ # nested bootstrap step
+  for (b in 1:B) {
     J <- sample.int(n, size = n, replace = TRUE) # Draw J
-    X.star <- X[J,]
+    estseries1 <- matrix(0, k, t + 2*p) # Raw series with zeros
+    for (i in (p + 1):(t + 2*p)){ # Generate series with e ~ N(0,1)
+      estseries1[, i] <- lag1coef%*%estseries1[, i-1] + lag2coef%*%estseries1[, i-2] + const + recenter.resids[J[i],]
+    }
+    X.star <- t(estseries1)
     colnames(X.star) <- names
     ca.star <- ca.jo(X.star, type = "trace", K = 2, ecdet = "none")
     S.star <- summary(ca.star)
     teststats.star <- rev(S.star@teststat) #stored as teststat
     Q.star1[b,] <- teststats.star
   }
-  cv.star1 <- quantile(Q.star1[,1], probs=0.95)
-  cv.star2 <- quantile(Q.star1[,2], probs=0.95)
-  
+  cv.star1 <- quantile(Q.star1[,2], probs=0.95)
+  cv.star2 <- quantile(Q.star1[,3], probs=0.95)
   if (teststats[1] > cv.star1) {reject.star.0[b] <- 1}
   if (teststats[2] > cv.star2) {reject.star.1[b] <- 1}
 }
